@@ -28,4 +28,4 @@ class State(BaseModel, Base):
                 if obj.__class__.__name__ == 'City':
                     if obj.state_id == self.id:
                         instance_list.append(obj)
-            return 
+            return instance_list

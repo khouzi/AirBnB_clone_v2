@@ -1,23 +1,27 @@
 #!/usr/bin/python3
-"""This module defines a base class for all models in our hbnb clone"""
+"""base module"""
 import uuid
 from datetime import datetime
 import models
 import sqlalchemy
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 
 Base = declarative_base()
 
 
 class BaseModel:
-    """A base class for all hbnb models"""
+    '''
+        Base class
+    '''
     id = Column(String(60), nullable=False, primary_key=True)
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow)
 
     def __init__(self, *args, **kwargs):
-        """Instatntiates a new model"""
+        '''
+            Initializer
+        '''
         if (len(kwargs) == 0):
             self.id = str(uuid.uuid4())
             self.created_at = datetime.now()
@@ -40,26 +44,36 @@ class BaseModel:
                     setattr(self, key, val)
 
     def __str__(self):
-        """Returns a string representation of the instance"""
-        return '[{}] ({}) {}'.format(cls, self.id, self.__dict__)
-    
+        '''
+            Return string representation of BaseModel class
+        '''
+        return ("[{}] ({}) {}".format(self.__class__.__name__,
+                                      self.id, self.__dict__))
+
     def __repr__(self):
-        """Return string representation of BaseModel class"""
+        '''
+            #Return string representation of BaseModel class
+        '''
         return ("[{}] ({}) {}".format(self.__class__.__name__,
                                       self.id, self.__dict__))
 
     def save(self):
-        """Updates updated_at with current time when instance is changed"""
+        '''
+            Update the updated_at attribute with new.
+        '''
         self.updated_at = datetime.now()
         models.storage.new(self)
         models.storage.save()
 
     def to_dict(self):
-        """Convert instance into dict format"""
-        dic = dict(self.__dict__)
-        if '_sa_instance_state' in dic:
-            del dic['_sa_instance_state']
-        dic['__class__'] = self.__class__.__name__
-        dic['updated_at'] = self.updated_at.strftime("%Y-%m-%dT%H:%M:%S.%f")
-        dic['created_at'] = self.created_at.strftime("%Y-%m-%dT%H:%M:%S.%f")
-        return (dic)
+        '''
+            Return dictionary representation of BaseModel class.
+        '''
+        dct = dict(self.__dict__)
+        if '_sa_instance_state' in dct:
+            del dct['_sa_instance_state']
+        dct['__class__'] = self.__class__.__name__
+        dct['updated_at'] = self.updated_at.strftime("%Y-%m-%dT%H:%M:%S.%f")
+        dct['created_at'] = self.created_at.strftime("%Y-%m-%dT%H:%M:%S.%f")
+
+        return (dct)
