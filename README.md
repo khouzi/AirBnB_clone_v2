@@ -139,4 +139,19 @@ Usage: <class_name>.update(<_id>, <dictionary>)
 (hbnb) User.all()
 (hbnb) ["[User] (98bea5de-9cb0-4d78-8a9d-c4de03521c30) {'updated_at': datetime.datetime(2020, 2, 19, 21, 47, 29, 134362), 'name': 'Fred the Frog', 'age': 9, 'id': '98bea5de-9cb0-4d78-8a9d-c4de03521c30', 'created_at': datetime.datetime(2020, 2, 19, 21, 47, 29, 134343)}"]
 ```
+## About
+
+Created on Ubuntu 14.04 LTS
+
+Compiled with gcc 4.8.4, using flags: -Wall -Werror -Wextra and -pedantic
+
+## Authors
+
+https://github.com/jassemb
+
+https://github.com/mouadhx04
+
+## License
+
+This project is licensed under the holberton school License.
 <br>

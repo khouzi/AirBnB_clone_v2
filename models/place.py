@@ -1,73 +1,86 @@
 #!/usr/bin/python3
-""" Place Module for HBNB project """
-import models
-from models import env
+"""This is the place class"""
+from models.base_model import BaseModel, Base
+from sqlalchemy import Column, String, ForeignKey, Integer, Float
+from sqlalchemy.orm import relationship
 from models.review import Review
 from models.amenity import Amenity
-from models.base_model import BaseModel, Base
-from sqlalchemy import Column, String, ForeignKey, Integer, Float, Table
-from sqlalchemy.orm import relationship
+from os import getenv
 
 
 class Place(BaseModel, Base):
-    """ A place to stay """
-    def __init__(self, *args, **kwargs):
-        """ Initializes Place
+    """This is the class for Place
+    Attributes:
+        city_id: city id
+        user_id: user id
+        name: name input
+        description: string of description
+        number_rooms: number of room in int
+        number_bathrooms: number of bathrooms in int
+        max_guest: maximum guest in int
+        price_by_night:: pice for a staying in int
+        latitude: latitude in flaot
+        longitude: longitude in float
+        amenity_ids: list of Amenity ids
+    """
+    __tablename__ = "places"
+    city_id = Column(String(60), ForeignKey("cities.id"), nullable=False)
+    user_id = Column(String(60), ForeignKey("users.id"), nullable=False)
+    name = Column(String(128), nullable=False)
+    description = Column(String(1024), nullable=True)
+    number_rooms = Column(Integer, nullable=False, default=0)
+    number_bathrooms = Column(Integer, nullable=False, default=0)
+    max_guest = Column(Integer, nullable=False, default=0)
+    price_by_night = Column(Integer, nullable=False, default=0)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    reviews = relationship("Review", cascade="all,delete", backref="place")
+    amenity_ids = []
+    _amenities = relationship('Amenity', secondary='place_amenity',
+                              viewonly=False, back_populates="place_amenities")
+
+    @property
+    def reviews(self):
         """
-        super().__init__(*args, **kwargs)
+        the getter attribute reviews returns
+        the list of Review instances
+        with place_id equals to the current Place.id
+        """
+        from models import storage
+        r = []
+        all_reviews = storage.all(Review)
+        for v in all_reviews.values():
+            if v.place_id == self.id:
+                r.append(v)
+        return r
 
-    if env == "db":
-        # DBstorange
-        __tablename__ = "places"
-        city_id = Column(String(60), ForeignKey('cities.id'),  nullable=False)
-        user_id = Column(String(60), ForeignKey('users.id'),  nullable=False)
-        name = Column(String(60), nullable=False)
-        description = Column(String(1024), nullable=False)
-        number_rooms = Column(Integer, nullable=False, default=0)
-        number_bathrooms = Column(Integer, nullable=False, default=0)
-        max_guest = Column(Integer, nullable=False, default=0)
-        price_by_night = Column(Integer, nullable=False, default=0)
-        latitude = Column(Float, nullable=False)
-        longitude = Column(Float, nullable=False)
-        reviews = relationship(
-            'Review', cascade='all, delete', backref='place')
-        # place_amenity = Table('place_amenity', Base.metadata,
-        #                    Column('place_id',
-        #                    String(60), ForeignKey('places.id')),
-        #                    Column('amenity_id',
-        #                    String(60), ForeignKey('right.id'))
-        #                )
-        # amenities = relationship('Amenity',
-        # secondary='place_amenity', viewonly=False)
-    else:
-        # filestorage
-        # getter attribute reviews that returns the list
-        # of Review instances with place_id getter attribute reviews
-        # that returns the list of Review instances with place_id
-        @property
-        def reviews(self):
-            places_reviews_instances = []
-            all_reviews = models.storage.all(Review)
-            for one_review in all_reviews:
-                if one_review.place_id == Place.id:
-                    places_reviews_instances.append(one_review)
-            return places_reviews_instances
+    @property
+    def amenities(self):
+        """
+        Getter attribute amenities that returns the list of Amenity instances
+        based on the attribute amenity_ids that contains all Amenity.id linked
+        to the Place
+        """
 
-        @property
-        def amenities(self):
-            amenity_ids = []
-            place_amenity_instance = []
-            all_amenities = models.storage.all(Amenity)
-            for one_amenity in all_amenities:
-                if one_amenity.id in amenity_ids:
-                    place_amenity_instance.append(one_amenity)
-            return place_amenity_instance
+        return self._amenities
 
-        @property
-        def amenities(self, amenity_obj):
-            amenity_ids = []
-            if isinstance(Amenity, amenity_obj):
-                for one_amenity in models.storage.all(Amenity):
-                    amenity_ids.append(one_amenity.id)
-            else:
+    @amenities.setter
+    def amenities(self, value):
+        """
+        Setter attribute amenities that handles append method for adding an
+        Amenity.id to the attribute amenity_ids. This method should accept only
+        Amenity object, otherwise, do nothing.
+        """
+        if (getenv('HBNB_TYPE_STORAGE') != "db"):
+            try:
+                if (value.__class__.__name__ == "Amenity"):
+                    self.amenity_ids.append(value.id)
+            except Exception:
                 pass
+            from models import storage
+            all_amenities = storage.all(Amenity)
+            linked_amenities = []
+            for value in all_amenities.values():
+                if value.id in self.amenity_ids:
+                    linked_amenities.append(value)
+            self._amenities = linked_amenities
