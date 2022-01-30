@@ -2,6 +2,7 @@
 """ Console Module """
 import cmd
 import sys
+from models import env
 from models.base_model import BaseModel
 from models.__init__ import storage
 from models.user import User
@@ -10,7 +11,6 @@ from models.state import State
 from models.city import City
 from models.amenity import Amenity
 from models.review import Review
-from models import env
 
 
 class HBNBCommand(cmd.Cmd):
@@ -74,7 +74,7 @@ class HBNBCommand(cmd.Cmd):
                 pline = pline[2].strip()  # pline is now str
                 if pline:
                     # check for *args or **kwargs
-                    if pline[0] is '{' and pline[-1] is'}'\
+                    if pline[0] == '{' and pline[-1] == '}'\
                             and type(eval(pline)) is dict:
                         _args = pline
                     else:
@@ -92,6 +92,52 @@ class HBNBCommand(cmd.Cmd):
         if not sys.__stdin__.isatty():
             print('(hbnb) ', end='')
         return stop
+
+    def parse_key_value(self, l):
+        """
+            generate a dictionary with key value pair that
+            each key is an object attribute
+        """
+        # print(l)
+        the_dict = {}
+        for argument in l:
+            # print(argument)
+            new_l = argument.split("=")
+            key = new_l[0]
+            value = new_l[1]
+            # print(value)
+            if (value[0] == '"'):
+                # print("yes")
+                if value[len(value) - 1] == '"':
+                    # print("yes")
+                    new_value = value[1:len(value) - 1]
+                    # print(new_value)
+                    clean_value = ""
+                    if '"' in new_value:
+                        ins = '\"'
+                        before = '"'
+                        clean_value = new_value.replace(before, ins, 1)
+                    if '_' in value:
+                        clean_value = new_value.replace('_', ' ')
+                    # print(clean_value)
+                    if clean_value:
+                        # print("value was indeed cleaned")
+                        the_dict.update({key: clean_value})
+                        # print(the_dict)
+                    else:
+                        the_dict.update({key: new_value})
+                        # print(the_dict)
+                else:
+                    # error string must end with "
+                    pass
+            else:
+                # value is a number
+                if value.isdigit():
+                    number = int(value)
+                else:
+                    number = float(value)
+                the_dict.update({key: number})
+        return (the_dict)
 
     def do_quit(self, command):
         """ Method to exit the HBNB console"""
@@ -125,9 +171,12 @@ class HBNBCommand(cmd.Cmd):
         else:
             l = args.split(" ")
             new_dict = self.parse_key_value(l[1::])
-            NI = HBNBCommand.classes[l[0]](**new_dict)
-            print(NI.id)
-            NI.save()
+            # print(new_dict)
+            # print(l[0])
+            new_instance = HBNBCommand.classes[l[0]](**new_dict)
+            print(new_instance.id)
+            # storage.new(new_instance)
+            new_instance.save()
 
     def help_create(self):
         """ Help information for the create method """
@@ -203,18 +252,27 @@ class HBNBCommand(cmd.Cmd):
     def do_all(self, args):
         """ Shows all objects, or all objects of a class"""
         print_list = []
-
         if args:
             args = args.split(' ')[0]  # remove possible trailing args
             if args not in HBNBCommand.classes:
                 print("** class doesn't exist **")
                 return
-            for k, v in storage._FileStorage__objects.items():
-                if k.split('.')[0] == args:
-                    print_list.append(str(v))
+            if env == "db":
+                obj_dict = storage.all(args)
+                for key in obj_dict:
+                    print_list.append(str(obj_dict[key]))
+            else:
+                for k, v in storage._FileStorage__objects.items():
+                    if k.split('.')[0] == args:
+                        print_list.append(str(v))
         else:
-            for k, v in storage._FileStorage__objects.items():
-                print_list.append(str(v))
+            if env == "db":
+                obj_dict = storage.all()
+                for key in obj_dict:
+                    print_list.append(obj_dict[key])
+            else:
+                for k, v in storage._FileStorage__objects.items():
+                    print_list.append(str(v))
 
         print(print_list)
 
@@ -275,7 +333,7 @@ class HBNBCommand(cmd.Cmd):
                 args.append(v)
         else:  # isolate args
             args = args[2]
-            if args and args[0] is '\"':  # check for quoted arg
+            if args and args[0] == '\"':  # check for quoted arg
                 second_quote = args.find('\"', 1)
                 att_name = args[1:second_quote]
                 args = args[second_quote + 1:]
@@ -283,10 +341,10 @@ class HBNBCommand(cmd.Cmd):
             args = args.partition(' ')
 
             # if att_name was not quoted arg
-            if not att_name and args[0] is not ' ':
+            if not att_name and args[0] != ' ':
                 att_name = args[0]
             # check for quoted val arg
-            if args[2] and args[2][0] is '\"':
+            if args[2] and args[2][0] == '\"':
                 att_val = args[2][1:args[2].find('\"', 1)]
 
             # if att_val was not quoted arg
